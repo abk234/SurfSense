@@ -35,9 +35,20 @@ RUN if [ "$(uname -m)" = "x86_64" ]; then \
         pip install --no-cache-dir torch torchvision torchaudio; \
     fi
 
-# Install python dependencies
-RUN pip install --no-cache-dir uv && \
-    uv pip install --system --no-cache-dir -e .
+# Install uv
+RUN pip install --no-cache-dir uv
+
+# Pre-download spaCy model to avoid network issues during uv install
+RUN pip install --no-cache-dir "spacy>=3.8.7" && \
+    (python -m spacy download en_core_web_sm || \
+     pip install --no-cache-dir https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl || \
+     echo "Warning: spaCy model pre-installation failed, will retry during main install")
+
+# Install python dependencies with retries
+RUN for i in 1 2 3; do \
+        uv pip install --system --no-cache-dir -e . && break || \
+        (echo "Attempt $i failed, waiting 10 seconds before retry..." && sleep 10); \
+    done
 
 # Set SSL environment variables dynamically
 RUN CERTIFI_PATH=$(python -c "import certifi; print(certifi.where())") && \

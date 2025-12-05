@@ -4,7 +4,7 @@ services:
   db:
     image: ankane/pgvector:latest
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5435}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -15,7 +15,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "${PGADMIN_PORT:-5051}:80"
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL:-admin@surfsense.com}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD:-surfsense}
@@ -27,7 +27,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT:-6381}:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -36,7 +36,7 @@ services:
     build: ./surfsense_backend
     # image: ghcr.io/modsetter/surfsense_backend:latest
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_PORT:-8001}:8000"
     volumes:
       - ./surfsense_backend/app:/app/app
       - shared_temp:/tmp
@@ -51,6 +51,8 @@ services:
       - UNSTRUCTURED_HAS_PATCHED_LOOP=1
       - LANGCHAIN_TRACING_V2=false
       - LANGSMITH_TRACING=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - db
       - redis
@@ -115,11 +117,11 @@ services:
       context: ./surfsense_web
       # image: ghcr.io/modsetter/surfsense_ui:latest
       args:
-        NEXT_PUBLIC_FASTAPI_BACKEND_URL: ${NEXT_PUBLIC_FASTAPI_BACKEND_URL:-http://localhost:8000}
+        NEXT_PUBLIC_FASTAPI_BACKEND_URL: ${NEXT_PUBLIC_FASTAPI_BACKEND_URL:-http://localhost:8001}
         NEXT_PUBLIC_FASTAPI_BACKEND_AUTH_TYPE: ${NEXT_PUBLIC_FASTAPI_BACKEND_AUTH_TYPE:-LOCAL}
         NEXT_PUBLIC_ETL_SERVICE: ${NEXT_PUBLIC_ETL_SERVICE:-DOCLING}
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-3003}:3000"
     env_file:
       - ./surfsense_web/.env
     depends_on:
